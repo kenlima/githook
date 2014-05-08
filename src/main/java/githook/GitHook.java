@@ -57,11 +57,19 @@ public class GitHook {
     }
 
     public static void main(String[] args) throws IOException, JavaGitException {
+        
+        if(args == null || args.length < 2) {
+            System.out.println("Usage : java GitHook <git binary path> <git working tree path>");
+            System.out.println("ex : java GitHook /usr/local/git/bin /Users/jwlee/wemakeprice/workspace/admin_project");
+            System.exit(0);
+        }
 
-        JavaGitConfiguration.setGitPath("/usr/local/git/bin/");
+//        JavaGitConfiguration.setGitPath("/usr/local/git/bin/");
+        JavaGitConfiguration.setGitPath(args[0]);
         System.out.println("git version : " + JavaGitConfiguration.getGitVersion());
 
-        File workingTreePath = new File("/Users/jwlee/wemakeprice/workspace/admin_project");
+//        File workingTreePath = new File("/Users/jwlee/wemakeprice/workspace/admin_project");
+        File workingTreePath = new File(args[1]);
         System.out.println("git path : " + workingTreePath.getPath());
 
         GitStatus gitStatus = new GitStatus();
