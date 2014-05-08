@@ -29,6 +29,42 @@ public class GitHook {
         this.lines = FileUtils.readLines(toCommitFile, "UTF-8");
     }
 
+    public static void main(String[] args) {
+
+        if (args == null || args.length < 2) {
+            System.out.println("Usage : java GitHook <git binary path> <git working tree path>");
+            System.out.println("ex : java GitHook /usr/local/git/bin /Users/jwlee/wemakeprice/workspace/admin_project");
+            System.exit(0);
+        }
+
+        try {
+            //          JavaGitConfiguration.setGitPath("/usr/local/git/bin/");
+            JavaGitConfiguration.setGitPath(args[0]);
+            System.out.println("git version : " + JavaGitConfiguration.getGitVersion());
+
+            //        File workingTreePath = new File("/Users/jwlee/wemakeprice/workspace/admin_project");
+            File workingTreePath = new File(args[1]);
+            System.out.println("git path : " + workingTreePath.getPath());
+
+            GitStatus gitStatus = new GitStatus();
+            GitStatusResponse status = gitStatus.status(workingTreePath);
+
+            System.out.println("untractedFileSize : " + status.getUntrackedFilesSize());
+            System.out.println("modifiedFileSize : " + status.getModifiedFilesToCommitSize());
+            System.out.println("newFileSize : " + status.getNewFilesToCommitSize());
+
+            List<File> modifiedOrNewFiles = scanModifiedOrNewFiles(status);
+
+            for (File file : modifiedOrNewFiles) {
+                GitHook gitHook = new GitHook(file);
+                gitHook.replaceComment();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }
+
     public static String parseDate(String date) {
 
         String[] formaters = new String[] { "yyyyMMdd", "yyyy-MM-dd", "yyyy. MM. dd.", "yyyy.MM.dd", "yyyy. MM. dd" };
@@ -56,41 +92,6 @@ public class GitHook {
         return result;
     }
 
-    public static void main(String[] args) throws IOException, JavaGitException {
-        
-        if(args == null || args.length < 2) {
-            System.out.println("Usage : java GitHook <git binary path> <git working tree path>");
-            System.out.println("ex : java GitHook /usr/local/git/bin /Users/jwlee/wemakeprice/workspace/admin_project");
-            System.exit(0);
-        }
-
-//        JavaGitConfiguration.setGitPath("/usr/local/git/bin/");
-        JavaGitConfiguration.setGitPath(args[0]);
-        System.out.println("git version : " + JavaGitConfiguration.getGitVersion());
-
-//        File workingTreePath = new File("/Users/jwlee/wemakeprice/workspace/admin_project");
-        File workingTreePath = new File(args[1]);
-        System.out.println("git path : " + workingTreePath.getPath());
-
-        GitStatus gitStatus = new GitStatus();
-        GitStatusResponse status = gitStatus.status(workingTreePath);
-
-        int untractedFileSize = status.getUntrackedFilesSize();
-        int modifiedFileSize = status.getModifiedFilesToCommitSize();
-        int newFileSize = status.getNewFilesToCommitSize();
-        System.out.println("untractedFileSize : " + untractedFileSize);
-        System.out.println("modifiedFileSize : " + modifiedFileSize);
-        System.out.println("newFileSize : " + newFileSize);
-
-        List<File> modifiedOrNewFiles = scanModifiedOrNewFiles(status);
-
-        for (File file : modifiedOrNewFiles) {
-            GitHook gitHook = new GitHook(file);
-            gitHook.updateMetaData();
-        }
-
-    }
-
     private static List<File> scanModifiedOrNewFiles(GitStatusResponse status) {
         Iterable<File> untractedFiles = status.getUntrackedFiles();
         Iterable<File> modifiedFiles = status.getModifiedFilesToCommit();
@@ -110,7 +111,7 @@ public class GitHook {
         return new ArrayList<File>(files.values());
     }
 
-    private void updateMetaData() throws IOException {
+    private void replaceComment() throws IOException {
         int idx = 0;
         for (String line : lines) {
             int commentIdx = searchCommentIdx(line);
@@ -161,7 +162,7 @@ public class GitHook {
 
         if (success) {
             lines.set(idx, start + append);
-            System.out.println(keyword + " updated. " + toCommitFile.getPath());
+            System.out.println(keyword + " replaced. " + toCommitFile.getPath());
         }
     }
 
