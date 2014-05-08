@@ -173,7 +173,7 @@ public class GitHook {
         return mTime;
     }
 
-    private static int searchCommentIdx(String string) {
+    private int searchCommentIdx(String string) {
         int a = string.indexOf("/**");
         int b = string.indexOf("*");
 
