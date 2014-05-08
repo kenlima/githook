@@ -32,6 +32,6 @@ Third Party
 
 실행
 ----
-java GitHook <git 실행파일 위치> <워킹디렉토리 위치>
+java GitHook git실행파일위치 워킹디렉토리위치
 
 ex) java GitHook /usr/local/gin/bin /Users/jwlee/workspace/admin_project
