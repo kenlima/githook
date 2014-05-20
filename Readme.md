@@ -33,7 +33,7 @@ Third Party
 
 실행
 ----
-java CommitChecker git실행파일위치 워킹디렉토리위치
+java CommitChecker 워킹디렉토리위치
 
-ex) java CommitChecker /usr/local/gin/bin /Users/jwlee/workspace/admin_project
+ex) java CommitChecker /Users/jwlee/workspace/admin_project
 
