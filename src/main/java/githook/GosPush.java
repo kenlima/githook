@@ -72,16 +72,43 @@ public class GosPush {
         // 임시 파일들을 복사
         copyFiles(copyFileList, copyTempDir, workingDir);
         
-        // untracked file list 가져오기. exceptFileList 제외.
-	    Set<String> unTrackedFiles = getUntrachedFiles(git, exceptFileList);
+        // unstaged file list 가져오기.
+	    Set<String> unStagedFiles = getUnstagedFiles(git);
 	    
-	    // untracked file list git add
-	    addUntrackedFiles(git, unTrackedFiles);
-	    
-	    // commit.
-	    gitCommit(git, commitMessage);
+	    // conflicted file list 가져오기.
+        Set<String> conflictedFiles = getConflictedFiles(git);
         
+	    // unstaged file list git add
+	    addGitListExcetpList(git, unStagedFiles, exceptFileList);
+	    
+	    if(conflictedFiles.size() > 0){
+	        System.out.println("충돌난 파일이 있습니다. 해결하고 커밋하세요.");
+	    }else{
+	        // commit.
+	        gitCommit(git, commitMessage);
+	        System.out.println("커밋이 완료되었습니다. 확인하세요.");
+	    }
 	}
+
+    /**
+     * @param exceptFileList 
+     * @brief  exceptFileList 를 제외한 컨플릭트 리스트 반환.
+     * @details 
+     * @param
+     * @return
+     * @throws
+     */
+    private static Set<String> getConflictedFiles(Git git) {
+        Set<String> result = new HashSet<>();
+        try {
+            result = git.status().call().getConflicting();
+        } catch (NoWorkTreeException e) {
+            e.printStackTrace();
+        } catch (GitAPIException e) {
+            e.printStackTrace();
+        }
+        return result;
+    }
 
     /**
      * @brief
@@ -110,24 +137,45 @@ public class GosPush {
     }
 
     /**
+     * @param exceptFileList 
+     * @brief files 리스트를 예외 파일 리스트와 대조하여 예외 리스트에 없는 파일만 git add 를 실행한다.
+     * @details
+     * @param
+     * @return
+     * @throws
+     */
+    private static void addGitListExcetpList(Git git, Set<String> files, List<String> exceptFileList) {
+        for (String fileName : files) {
+            boolean isExceptFile = false;
+            for (String exFileName : exceptFileList) {
+                if ("/".concat(fileName).indexOf(exFileName) == 0) {
+                    isExceptFile = true;
+                    break;
+                }
+            }
+            if (!isExceptFile) {
+                addGitFile(git, fileName);
+            }
+        }
+    }
+
+    /**
      * @brief
      * @details
      * @param
      * @return
      * @throws
      */
-    private static void addUntrackedFiles(Git git, Set<String> unTrackedFiles) {
-        for (String file : unTrackedFiles) {
-            try {
-                AddCommand add = git.add();
-                add.addFilepattern(file).call();
-                System.out.println(file);
-            } catch (NoFilepatternException e) {
-                e.printStackTrace();
-            } catch (GitAPIException e) {
-                e.printStackTrace();
-            }
-        }
+    private static void addGitFile(Git git, String file) {
+        try {
+            AddCommand add = git.add();
+            add.addFilepattern(file).call();
+            System.out.println("git Add File ==> " + file);
+        } catch (NoFilepatternException e) {
+            e.printStackTrace();
+        } catch (GitAPIException e) {
+            e.printStackTrace();
+        }    
     }
 
     /**
@@ -138,12 +186,11 @@ public class GosPush {
      * @return
      * @throws
      */
-    private static Set<String> getUntrachedFiles(Git git, List<String> exceptFileList) {
+    private static Set<String> getUnstagedFiles(Git git) {
         Set<String> result = new HashSet<>();
         try {
-            Set<String> all = new HashSet<>();
-            
             List<Set<String>> list = new ArrayList<>();
+            
             list.add(git.status().call().getUntracked());
             list.add(git.status().call().getModified());
             list.add(git.status().call().getAdded());
@@ -151,24 +198,8 @@ public class GosPush {
             list.add(git.status().call().getChanged());
             list.add(git.status().call().getMissing());
             
-            addSetListSet(all, list);
+            addSetListSet(result, list);
             
-            System.out.println(all.size());
-            
-            for (String fileName : all) {
-                System.out.println("untracked file name = " + fileName);
-                boolean isExceptFile = false;
-                for (String exFileName : exceptFileList) {
-                    if("/".concat(fileName).indexOf(exFileName) == 0){
-                        isExceptFile = true;
-                        break;
-                    }
-                }
-                if(!isExceptFile){
-                    System.out.println("add filename = " + fileName);
-                    result.add(fileName);
-                }
-            }
         } catch (NoWorkTreeException e) {
             e.printStackTrace();
         } catch (GitAPIException e) {
@@ -186,9 +217,14 @@ public class GosPush {
      */
     private static void addSetListSet(Set<String> all, List<Set<String>> list) {
         for (Set<String> set : list) {
-            for (String str : set) {
-                all.add(str);
-            }
+            addSet(all, set);
+        }
+    }
+    
+    /* Set 형식의 모든 모든 것을 받아서 합쳐주는 함수. */
+    private static <T extends Object> void addSet(Set<T> orig, Set<T> target) {
+        for (T str : target) {
+            orig.add(str);
         }
     }
 
@@ -259,11 +295,8 @@ public class GosPush {
                 }
             }
         }
-        
     }
 
-    
-    
     /* 디렉토리를 생성해주고 그 내부를 비워주는 함수.
      * */
     private static void emptyMkdir(File targetDir) {
