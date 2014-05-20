@@ -1,6 +1,5 @@
 package githook;
 
-import java.awt.geom.IllegalPathStateException;
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
