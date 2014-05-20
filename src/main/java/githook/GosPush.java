@@ -45,12 +45,14 @@ public class GosPush {
 
         // 복사할 파일 및 디렉토리 설정.
         copyFileList.add(new String("/src"));
-        copyFileList.add(new String("/pom.xml"));
+        //copyFileList.add(new String("/pom.xml"));
         
         // add 하지 않을 파일 및 디렉토리 설정.
         exceptFileList.add(new String("/.classpath"));
         exceptFileList.add(new String("/.gitignore"));
         exceptFileList.add(new String("/.project"));
+        exceptFileList.add(new String("/.settings"));
+        exceptFileList.add(new String("/.springBeans"));
         exceptFileList.add(new String("/bin"));
         exceptFileList.add(new String("/src/test/java/com/wemakeprice/administrator"));
         
